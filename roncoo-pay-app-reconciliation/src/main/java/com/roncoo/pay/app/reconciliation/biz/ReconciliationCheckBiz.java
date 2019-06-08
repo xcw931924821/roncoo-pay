@@ -63,6 +63,15 @@ public class ReconciliationCheckBiz {
 	 *            支付渠道
 	 * @param batch
 	 *            对账批次记录
+	 * 对账核心步骤
+	 * 1 拿到当天平台的成功订单和银行的订单比较
+	 *  1.1 ，如果有不同的就放到差错库里面，人工审核。
+	 *  1.2 如果订单数据在银行的数据找不到，就放到缓冲层池里面，方便下次比较，有些银行是隔天给数据；
+	 * 2
+	 *
+	 *
+	 *
+	 *
 	 */
 	public void check(List<ReconciliationEntityVo> bankList, String interfaceCode, RpAccountCheckBatch batch) {
 		// 判断bankList是否为空
@@ -72,151 +81,69 @@ public class ReconciliationCheckBiz {
 		// 查询平台bill_date,interfaceCode成功的交易
 		List<RpTradePaymentRecord> platSucessDateList = reconciliationDataGetBiz.getSuccessPlatformDateByBillDate(batch.getBillDate(), interfaceCode);
 
-		// 查询平台bill_date,interfaceCode所有的交易
-		List<RpTradePaymentRecord> platAllDateList = reconciliationDataGetBiz.getAllPlatformDateByBillDate(batch.getBillDate(), interfaceCode);
-
-		// 查询平台缓冲池中所有的数据
-		List<RpAccountCheckMistakeScratchPool> platScreatchRecordList = rpAccountCheckMistakeScratchPoolService.listScratchPoolRecord(null);
-
-		// 差错list
+		// 差错list rp_account_check_mistake 差错表
 		List<RpAccountCheckMistake> mistakeList = new ArrayList<RpAccountCheckMistake>();
 
 		// 需要放入缓冲池中平台长款list
 		List<RpAccountCheckMistakeScratchPool> insertScreatchRecordList = new ArrayList<RpAccountCheckMistakeScratchPool>();
 
-		// 需要从缓冲池中移除的数据
-		List<RpAccountCheckMistakeScratchPool> removeScreatchRecordList = new ArrayList<RpAccountCheckMistakeScratchPool>();
 
-		LOG.info("  开始以平台的数据为准对账,平台长款记入缓冲池");
+		LOG.info("  开始以平台成功的数据为准对账,平台长款记入缓冲池");
 		baseOnPaltForm(platSucessDateList, bankList, mistakeList, insertScreatchRecordList, batch);
 		LOG.info("结束以平台的数据为准对账");
 
+       // 需要从缓冲池中移除的数据
 		LOG.info("  开始以银行通道的数据为准对账");
+		List<RpAccountCheckMistakeScratchPool> removeScreatchRecordList = new ArrayList<RpAccountCheckMistakeScratchPool>();
+		// 查询平台缓冲池中所有的数据，让线上的银行数据和所有的缓冲数据比较，怕隔天的
+		List<RpAccountCheckMistakeScratchPool> platScreatchRecordList = rpAccountCheckMistakeScratchPoolService.listScratchPoolRecord(null);
+		// 查询平台bill_date,interfaceCode所有的交易，如果银行数据的是订单失败就不需要管理了。
+		//这里是为了比较银行订单的失败的就不要管理了。
+		List<RpTradePaymentRecord> platAllDateList = reconciliationDataGetBiz.getAllPlatformDateByBillDate(batch.getBillDate(), interfaceCode);
+
 		baseOnBank(platAllDateList, bankList, platScreatchRecordList, mistakeList, batch, removeScreatchRecordList);
 		LOG.info(" 结束以银行通道的数据为准对账");
 
 		// 保存数据
-		rpAccountCheckTransactionService.saveDatasaveDate(batch, mistakeList, insertScreatchRecordList, removeScreatchRecordList);
+		rpAccountCheckTransactionService.saveDatasaveDate(
+				batch, mistakeList,
+				insertScreatchRecordList,
+				removeScreatchRecordList);
 
 	}
 
 	/**
 	 * 以平台的数据为准对账
-	 * 
-	 * @param platformDateList
-	 *            平台dilldate的成功数据
-	 * @param bankList
-	 *            银行成功对账单数据
-	 * 
-	 * @param misTakeList
-	 *            差错list
-	 * @param screatchRecordList
-	 *            需要放入缓冲池中平台长款list
-	 * 
+	 * @param platformDateSuccessList 平台dilldate的成功数据
+	 * @param bankList 银行成功对账单数据
+	 * @param misTakeList 差错list
+	 * @param screatchRecordList 需要放入缓冲池中平台list
 	 * @param batch
 	 *            对账批次
 	 */
-	private void baseOnPaltForm(List<RpTradePaymentRecord> platformDateList, List<ReconciliationEntityVo> bankList, List<RpAccountCheckMistake> misTakeList, List<RpAccountCheckMistakeScratchPool> screatchRecordList, RpAccountCheckBatch batch) {
+	private void baseOnPaltForm(List<RpTradePaymentRecord> platformDateSuccessList,
+								List<ReconciliationEntityVo> bankList,
+								List<RpAccountCheckMistake> misTakeList,
+								List<RpAccountCheckMistakeScratchPool> screatchRecordList,
+								RpAccountCheckBatch batch) {
 		BigDecimal platTradeAmount = BigDecimal.ZERO;// 平台交易总金额
 		BigDecimal platFee = BigDecimal.ZERO;// 平台总手续费
 		Integer tradeCount = 0;// 平台订单总数
 		Integer mistakeCount = 0;
 
-		for (RpTradePaymentRecord record : platformDateList) {
-			Boolean flag = false;// 用于标记是否有匹配
-			// 累计平台交易总金额和总手续费
-			platTradeAmount = platTradeAmount.add(record.getOrderAmount());
-			platFee = platFee.add(record.getPlatCost() == null ? BigDecimal.ZERO : record.getPlatCost());
-			tradeCount++;
-			for (ReconciliationEntityVo bankRecord : bankList) {
-				// 如果银行账单中有匹配数据：进行金额，手续费校验
-				if (record.getBankOrderNo().equalsIgnoreCase(bankRecord.getBankOrderNo())) {
-					flag = true;// 标记已经找到匹配
+		for (RpTradePaymentRecord record : platformDateSuccessList) {
+				Boolean flag = false; 		// 用于标记是否有匹配
+				//累计平台交易总金额和总手续费
+				platTradeAmount = platTradeAmount.add(record.getOrderAmount());
+				platFee = platFee.add(record.getPlatCost() == null ? BigDecimal.ZERO : record.getPlatCost());
+				tradeCount++;
+				for (ReconciliationEntityVo bankRecord : bankList) {
+					// 如果银行账单中有匹配数据(订单号相同)：进行金额，手续费校验，状态都一值的，平台和银行都一样
+					if (record.getBankOrderNo().equalsIgnoreCase(bankRecord.getBankOrderNo())) {
+						flag = true;// 标记已经找到匹配
 
-					/** step1:匹配订单金额 **/
-					// 平台金额多
-					if (record.getOrderAmount().compareTo(bankRecord.getBankAmount()) == 1) {
-						// 金额不匹配，创建差错记录
-						RpAccountCheckMistake misktake = createMisktake(null, record, bankRecord, ReconciliationMistakeTypeEnum.PLATFORM_OVER_CASH_MISMATCH, batch);
-						misTakeList.add(misktake);
-						mistakeCount++;
-						break;
-					}
-					// 平台金额少
-					else if (record.getOrderAmount().compareTo(bankRecord.getBankAmount()) == -1) {
-						// 金额不匹配，创建差错记录
-						RpAccountCheckMistake misktake = createMisktake(null, record, bankRecord, ReconciliationMistakeTypeEnum.PLATFORM_SHORT_CASH_MISMATCH, batch);
-						misTakeList.add(misktake);
-						mistakeCount++;
-						break;
-					}
-
-					/** step2:匹配订单手续费 **/
-					if (record.getPlatCost().compareTo(bankRecord.getBankFee()) != 0) {
-						// 金额不匹配，创建差错记录
-						RpAccountCheckMistake misktake = createMisktake(null, record, bankRecord, ReconciliationMistakeTypeEnum.FEE_MISMATCH, batch);
-						misTakeList.add(misktake);
-						mistakeCount++;
-						break;
-					}
-
-				}
-			}
-			// 没有找到匹配的记录，把这个订单记录到缓冲池中
-			if (!flag) {
-				RpAccountCheckMistakeScratchPool screatchRecord = getScratchRecord(record, batch);
-				screatchRecordList.add(screatchRecord);
-			}
-		}
-
-		// 统计数据保存
-		batch.setTradeAmount(platTradeAmount);
-		batch.setTradeCount(tradeCount);
-		batch.setFee(platFee);
-		batch.setMistakeCount(mistakeCount);
-	}
-
-	/**
-	 * 以银行的数据为准对账
-	 * 
-	 * @param bankList
-	 *            银行对账单数据
-	 * 
-	 * @param misTakeList
-	 *            差错list
-	 * 
-	 * @param platScreatchRecordList
-	 *            平台缓冲池中的数据
-	 * 
-	 * @param batch
-	 *            对账批次
-	 */
-	private void baseOnBank(List<RpTradePaymentRecord> platAllDateList, List<ReconciliationEntityVo> bankList, List<RpAccountCheckMistakeScratchPool> platScreatchRecordList, List<RpAccountCheckMistake> misTakeList, RpAccountCheckBatch batch, List<RpAccountCheckMistakeScratchPool> removeScreatchRecordList) {
-		BigDecimal platTradeAmount = BigDecimal.ZERO;// 平台交易总金额
-		BigDecimal platFee = BigDecimal.ZERO;// 平台总手续费
-		Integer tradeCount = 0;// 平台订单总数
-		Integer mistakeCount = 0;
-		// 拿银行数据去对账
-		for (ReconciliationEntityVo bankRecord : bankList) {
-
-			boolean flag = false;// 用于标记是否有匹配
-			for (RpTradePaymentRecord record : platAllDateList) {
-				/** step1 检查有匹配的数据 **/
-				if (bankRecord.getBankOrderNo().equals(record.getBankOrderNo())) {
-					flag = true;
-					/** step2： 判断平台状态是否匹配 **/
-					/** 注意：状态匹配不需要做金额和手续费验证，以平台数据为基准对账已经做了验证 **/
-					// 不匹配记录差错。
-					if (!TradeStatusEnum.SUCCESS.name().equals(record.getStatus())) {
-						RpAccountCheckMistake misktake1 = createMisktake(null, record, bankRecord, ReconciliationMistakeTypeEnum.PLATFORM_SHORT_STATUS_MISMATCH, batch);
-						misTakeList.add(misktake1);
-						mistakeCount++;
-						// break;
-
-						/** 订单状态不匹配验证完之后，在验证金额和手续费，差错处理必须先处理状态不符的情况 **/
-						// 验证金额和手续费
 						/** step1:匹配订单金额 **/
-						// 平台金额多
+						// 平台金额多，平台长款
 						if (record.getOrderAmount().compareTo(bankRecord.getBankAmount()) == 1) {
 							// 金额不匹配，创建差错记录
 							RpAccountCheckMistake misktake = createMisktake(null, record, bankRecord, ReconciliationMistakeTypeEnum.PLATFORM_OVER_CASH_MISMATCH, batch);
@@ -224,7 +151,7 @@ public class ReconciliationCheckBiz {
 							mistakeCount++;
 							break;
 						}
-						// 平台金额少
+						// 平台金额少，平台短款
 						else if (record.getOrderAmount().compareTo(bankRecord.getBankAmount()) == -1) {
 							// 金额不匹配，创建差错记录
 							RpAccountCheckMistake misktake = createMisktake(null, record, bankRecord, ReconciliationMistakeTypeEnum.PLATFORM_SHORT_CASH_MISMATCH, batch);
@@ -241,17 +168,87 @@ public class ReconciliationCheckBiz {
 							mistakeCount++;
 							break;
 						}
-
 					}
 				}
-			}
+				// 平台订单记录在银行没有找到匹配的记录，把这个订单记录到缓冲池中，方便下次再用。
+				if (!flag) {
+					RpAccountCheckMistakeScratchPool screatchRecord = getScratchRecord(record, batch);
+					screatchRecordList.add(screatchRecord);
+				}
+		}
 
+		// 统计数据保存
+		batch.setTradeAmount(platTradeAmount);
+		batch.setTradeCount(tradeCount);
+		batch.setFee(platFee);
+		batch.setMistakeCount(mistakeCount);
+	}
+
+	/**
+	 * 以银行的数据为准对账
+	 * @param bankList 银行对账单数据
+	 * @param misTakeList 差错list
+	 * @param platScreatchRecordList
+	 * @param batch 对账批次
+	 */
+	private void baseOnBank(List<RpTradePaymentRecord> platAllDateList, List<ReconciliationEntityVo> bankList, List<RpAccountCheckMistakeScratchPool> platScreatchRecordList, List<RpAccountCheckMistake> misTakeList, RpAccountCheckBatch batch, List<RpAccountCheckMistakeScratchPool> removeScreatchRecordList) {
+		BigDecimal platTradeAmount = BigDecimal.ZERO;// 平台交易总金额
+		BigDecimal platFee = BigDecimal.ZERO;// 平台总手续费
+		Integer tradeCount = 0;// 平台订单总数
+		Integer mistakeCount = 0;
+		// 拿银行数据去对账
+		for (ReconciliationEntityVo bankRecord : bankList) {
+			boolean flag = false;
+			// 用于标记是否有匹配
+			for (RpTradePaymentRecord platformRecord : platAllDateList) {
+				/** step1 检查有匹配的数据 **/
+				if (bankRecord.getBankOrderNo().equals(platformRecord.getBankOrderNo())) {
+					flag = true;
+
+					/** step2： 判断平台状态是否匹配,状态不匹配，就不需要对照了 **/
+					/** 注意：状态为成功的，以平台数据为基准对账已经做了验证 **/
+						if (!TradeStatusEnum.SUCCESS.name().equals(platformRecord.getStatus())) {
+							RpAccountCheckMistake misktake1 = createMisktake(null, platformRecord, bankRecord, ReconciliationMistakeTypeEnum.PLATFORM_SHORT_STATUS_MISMATCH, batch);
+							misTakeList.add(misktake1);
+							mistakeCount++;
+							// break;
+
+							/** 订单状态不匹配验证完之后，在验证金额和手续费，差错处理必须先处理状态不符的情况 **/
+							// 验证金额和手续费
+							/** step1:匹配订单金额 **/
+							// 平台金额多
+							if (platformRecord.getOrderAmount().compareTo(bankRecord.getBankAmount()) == 1) {
+								// 金额不匹配，创建差错记录
+								RpAccountCheckMistake misktake = createMisktake(null, platformRecord, bankRecord, ReconciliationMistakeTypeEnum.PLATFORM_OVER_CASH_MISMATCH, batch);
+								misTakeList.add(misktake);
+								mistakeCount++;
+								break;
+							}
+							// 平台金额少
+							else if (platformRecord.getOrderAmount().compareTo(bankRecord.getBankAmount()) == -1) {
+								// 金额不匹配，创建差错记录
+								RpAccountCheckMistake misktake = createMisktake(null, platformRecord, bankRecord, ReconciliationMistakeTypeEnum.PLATFORM_SHORT_CASH_MISMATCH, batch);
+								misTakeList.add(misktake);
+								mistakeCount++;
+								break;
+							}
+
+							/** step2:匹配订单手续费 **/
+							if (platformRecord.getPlatCost().compareTo(bankRecord.getBankFee()) != 0) {
+								// 金额不匹配，创建差错记录
+								RpAccountCheckMistake misktake = createMisktake(null, platformRecord, bankRecord, ReconciliationMistakeTypeEnum.FEE_MISMATCH, batch);
+								misTakeList.add(misktake);
+								mistakeCount++;
+								break;
+							}
+						}
+				}
+			}
 			/** step3： 如果没有匹配的数据，去缓冲池中查找对账，如果没有记录差错 **/
 			if (!flag) {
-				// 去缓冲池中查找对账(前提是缓冲池里面有数据)
+				// 去缓冲池中查找对账(前提是缓冲池里面有数据,银行的订单有可能隔天才出现)
 				if (platScreatchRecordList != null)
 					for (RpAccountCheckMistakeScratchPool scratchRecord : platScreatchRecordList) {
-
 						// 找到匹配的
 						if (scratchRecord.getBankOrderNo().equals(bankRecord.getBankOrderNo())) {
 							// 累计平台交易总金额和总手续费

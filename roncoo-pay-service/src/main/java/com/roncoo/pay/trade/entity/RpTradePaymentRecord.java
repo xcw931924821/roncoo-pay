@@ -113,7 +113,7 @@ public class RpTradePaymentRecord extends BaseEntity implements Serializable {
     /** 支付结果后台通知地址 **/
     private String notifyUrl;
 
-    /** 支付通道编码 **/
+    /** 支付通道编码， 对应  interfaceCode**/
     private String payWayCode;
 
     /** 支付通道名称 **/

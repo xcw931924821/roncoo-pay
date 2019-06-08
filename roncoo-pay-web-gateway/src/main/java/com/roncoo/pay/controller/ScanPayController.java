@@ -51,10 +51,6 @@ import java.util.Map;
 
 /**
  * <b>功能说明:扫码支付控制类
- * </b>
- *
- * @author Peter
- * <a href="http://www.roncoo.com">龙果学院(www.roncoo.com)</a>
  */
 @Controller
 @RequestMapping(value = "/scanPay")
@@ -146,16 +142,17 @@ public class ScanPayController extends BaseController {
             throw new TradeBizException(TradeBizException.TRADE_ORDER_ERROR, "订单签名异常");
         }
 
-        if (StringUtil.isEmpty(payWayCode)) {//非直连方式
+        if (StringUtil.isEmpty(payWayCode)) {
+            //非直连方式
             logger.info("======>扫码支付，非直连方式");
             BigDecimal orderPrice = BigDecimal.valueOf(Double.valueOf(orderPriceStr));
             RpPayGateWayPageShowVo payGateWayPageShowVo = rpTradePaymentManagerService.initNonDirectScanPay(payKey, productName, orderNo, orderDate, orderTime, orderPrice, orderIp, orderPeriod, returnUrl
                     , notifyUrl, remark, field1, field2, field3, field4, field5);
-
             model.addAttribute("payGateWayPageShowVo", payGateWayPageShowVo);//支付网关展示数据
             return "gateway";
 
-        } else {//直连方式
+        } else {
+            //直连方式
             logger.info("======>扫码支付，直连方式");
             BigDecimal orderPrice = BigDecimal.valueOf(Double.valueOf(orderPriceStr));
             ScanPayResultVo scanPayResultVo = rpTradePaymentManagerService.initDirectScanPay(payKey, productName, orderNo, orderDate, orderTime, orderPrice, payWayCode, orderIp, orderPeriod, returnUrl
@@ -169,7 +166,8 @@ public class ScanPayController extends BaseController {
                 model.addAttribute("orderPrice", orderPrice);//订单价格
                 return "weixinPayScanPay";
             } else if (PayWayEnum.ALIPAY.name().equals(scanPayResultVo.getPayWayCode())) {
-                return "alipayDirectPay";
+                //支付宝扫码支付,codeUrl里面就是哪个扫码页面；
+               return "alipayDirectPay";
             }
         }
         return "gateway";

@@ -58,7 +58,6 @@ public class RpTradePaymentQueryServiceImpl implements RpTradePaymentQueryServic
 
 	/**
 	 * 根据参数查询交易记录List
-	 *
 	 * @param paramMap
 	 * @return
 	 */

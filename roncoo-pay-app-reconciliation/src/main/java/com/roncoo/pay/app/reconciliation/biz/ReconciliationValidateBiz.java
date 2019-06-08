@@ -99,9 +99,10 @@ public class ReconciliationValidateBiz {
 				mistake.setAccountCheckBatchNo(scratchRecord.getBatchNo());
 				mistake.setBillDate(scratchRecord.getBillDate());
 				mistake.setErrType(ReconciliationMistakeTypeEnum.BANK_MISS.name());
+				//本地订单有，银行不存在的化，属于短张
 				mistake.setHandleStatus(MistakeHandleStatusEnum.NOHANDLE.name());
-				mistake.setBankType(scratchRecord.getPayWayCode());
 
+				mistake.setBankType(scratchRecord.getPayWayCode());
 				mistake.setOrderNo(scratchRecord.getMerchantOrderNo());
 				mistake.setTradeTime(scratchRecord.getPaySuccessTime());
 				mistake.setTrxNo(scratchRecord.getTrxNo());
@@ -111,9 +112,8 @@ public class ReconciliationValidateBiz {
 				mistake.setFee(scratchRecord.getPlatCost());
 				mistakeList.add(mistake);
 			}
-
+			//从缓冲池移动出
 			rpAccountCheckTransactionService.removeDateFromPool(list, mistakeList);
-
 		}
 
 	}

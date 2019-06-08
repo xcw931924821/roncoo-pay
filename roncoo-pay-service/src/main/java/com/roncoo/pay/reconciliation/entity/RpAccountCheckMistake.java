@@ -22,7 +22,6 @@ import java.util.Date;
 
 /**
  * 对账差错表.
- *
  * 龙果学院：www.roncoo.com
  * 
  * @author：shenjialong

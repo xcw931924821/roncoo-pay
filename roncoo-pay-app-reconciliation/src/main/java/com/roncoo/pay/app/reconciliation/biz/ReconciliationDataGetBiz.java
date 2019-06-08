@@ -43,11 +43,8 @@ public class ReconciliationDataGetBiz {
 
 	/**
 	 * 获取平台指定支付渠道、指定订单日下[所有成功]的数据
-	 * 
-	 * @param billDate
-	 *            账单日
-	 * @param interfaceCode
-	 *            支付渠道
+	 * @param billDate  账单日
+	 * @param interfaceCode 支付渠道
 	 * @return
 	 */
 	public List<RpTradePaymentRecord> getSuccessPlatformDateByBillDate(Date billDate, String interfaceCode) {

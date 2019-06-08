@@ -23,6 +23,8 @@ import java.util.Map;
 /**
  * 对账差错类型枚举 .
  *
+ * 平台短款：银行少结算给支付系统
+ * 比如长款(银行多结算给支付系统)
  * 龙果学院：www.roncoo.com
  * 
  * @author：shenjialong

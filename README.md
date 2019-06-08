@@ -57,13 +57,11 @@ roncoo-pay //龙果支付
 |
 ├── roncoo-pay-service //核心业务模块，不需要单独部署
 |
-├── roncoo-pay-web-boss //运营后台模块
+├── roncoo-pay-web-boss //运营后台模块，配置商户的一些功能
 |
-├── roncoo-pay-web-gateway //支付网关模块
-|
-├── roncoo-pay-web-merchant //商户后台模块
-|
-├── roncoo-pay-web-sample-shop //模拟商城模块
+├── roncoo-pay-web-gateway //支付网关模块 8081，商城都会调用这个地址
+├── roncoo-pay-web-merchant //给商户后台模块，让商家自己管理使用
+├── roncoo-pay-web-sample-shop //模拟商城模块 8083
 ```
 
 ##### 模块介绍

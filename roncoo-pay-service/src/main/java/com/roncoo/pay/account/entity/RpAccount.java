@@ -33,7 +33,7 @@ public class RpAccount extends BaseEntity implements Serializable {
     /** 账户余额 **/
     private BigDecimal balance;
 
-    /** 不可用余额 **/
+    /** 不可用余额**/
     private BigDecimal unbalance;
 
     /** 保证金 **/
@@ -84,8 +84,7 @@ public class RpAccount extends BaseEntity implements Serializable {
 	}
 
 	/**
-	 * 获取实际可结算金额
-	 * 
+	 * 获取可结算金额
 	 * @return
 	 */
 	public BigDecimal getAvailableSettAmount() {

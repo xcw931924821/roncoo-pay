@@ -148,7 +148,6 @@ public class ReconciliationTask {
 					batchService.saveData(batch);
 					continue;
 				}
-
 			}
 
 			/** step5:清理缓冲池 **/

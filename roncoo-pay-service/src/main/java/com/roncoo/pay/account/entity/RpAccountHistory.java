@@ -33,10 +33,10 @@ public class RpAccountHistory extends BaseEntity implements Serializable {
 	/** 账户编号 **/
     private String accountNo;
 
-    /** 金额 **/
+    /** 处理金额 **/
     private BigDecimal amount;
 
-    /** 账户余额 **/
+    /** 账户剩下的余额 **/
     private BigDecimal balance;
 
     /** 资金变动方向 **/

@@ -103,8 +103,12 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
     private AliF2FPaySubmit aliF2FPaySubmit;*/
 
     /**
-     * 初始化直连扫码支付数据,直连扫码支付初始化方法规则 1:根据(商户编号 + 商户订单号)确定订单是否存在
-     * 1.1:如果订单存在,抛异常,提示订单已存在 1.2:如果订单不存在,创建支付订单 2:创建支付记录 3:根据相应渠道方法
+     * 初始化直连扫码支付数据,直连扫码支付初始化方法规则
+     * 1:根据(商户编号 + 商户订单号)确定订单是否存在
+     *  1.1:如果订单存在,抛异常,提示订单已存在
+     *  1.2:如果订单不存在,创建支付订单
+     * 2:创建支付记录
+     * 3:根据相应渠道方法
      * 4:调转到相应支付渠道扫码界面
      *
      * @param payKey      商户支付KEY
@@ -128,7 +132,6 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ScanPayResultVo initDirectScanPay(String payKey, String productName, String orderNo, Date orderDate, Date orderTime, BigDecimal orderPrice, String payWayCode, String orderIp, Integer orderPeriod, String returnUrl, String notifyUrl, String remark, String field1, String field2, String field3, String field4, String field5) {
-
         RpUserPayConfig rpUserPayConfig = rpUserPayConfigService.getByPayKey(payKey);
         if (rpUserPayConfig == null) {
             throw new UserBizException(UserBizException.USER_PAY_CONFIG_ERRPR, "用户支付配置有误");
@@ -174,7 +177,6 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
 
     /**
      * 条码支付,对应的是支付宝的条码支付或者微信的刷卡支付
-     *
      * @param payKey      商户支付key
      * @param authCode    支付授权码
      * @param productName 产品名称
@@ -194,7 +196,6 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
      */
     @Override
     public F2FPayResultVo f2fPay(String payKey, String authCode, String productName, String orderNo, Date orderDate, Date orderTime, BigDecimal orderPrice, String payWayCode, String orderIp, String remark, String field1, String field2, String field3, String field4, String field5) {
-
         RpUserPayConfig rpUserPayConfig = rpUserPayConfigService.getByPayKey(payKey);
         if (rpUserPayConfig == null) {
             throw new UserBizException(UserBizException.USER_PAY_CONFIG_ERRPR, "用户支付配置有误");
@@ -245,7 +246,6 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
 
     /**
      * 通过支付订单及商户费率生成支付记录
-     *
      * @param rpTradePaymentOrder 支付订单
      * @param payWay              商户支付配置
      * @return
@@ -356,7 +356,6 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
 
     /**
      * 支付成功方法
-     *
      * @param rpTradePaymentRecord
      */
     @Transactional(rollbackFor = Exception.class)
@@ -370,15 +369,18 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
 
         RpTradePaymentOrder rpTradePaymentOrder = rpTradePaymentOrderDao.selectByMerchantNoAndMerchantOrderNo(rpTradePaymentRecord.getMerchantNo(), rpTradePaymentRecord.getMerchantOrderNo());
         rpTradePaymentOrder.setStatus(TradeStatusEnum.SUCCESS.name());
-        rpTradePaymentOrder.setTrxNo(rpTradePaymentRecord.getTrxNo());// 设置支付平台支付流水号
+        rpTradePaymentOrder.setTrxNo(rpTradePaymentRecord.getTrxNo());
+        // 设置支付平台支付流水号
         rpTradePaymentOrderDao.update(rpTradePaymentOrder);
 
         if (FundInfoTypeEnum.PLAT_RECEIVES.name().equals(rpTradePaymentRecord.getFundIntoType())) {
             rpAccountTransactionService.creditToAccount(rpTradePaymentRecord.getMerchantNo(), rpTradePaymentRecord.getOrderAmount().subtract(rpTradePaymentRecord.getPlatIncome()), rpTradePaymentRecord.getBankOrderNo(), rpTradePaymentRecord.getBankTrxNo(), rpTradePaymentRecord.getTrxType(), rpTradePaymentRecord.getRemark());
         }
 
-        if (PayTypeEnum.F2F_PAY.name().equals(rpTradePaymentOrder.getPayTypeCode())) {// 支付宝
-            // 条码支付实时返回支付结果,不需要商户通知（修改后，条码支付结果通过订单轮询去确认订单状态，成功后通知商户）
+        if (PayTypeEnum.F2F_PAY.name().equals(rpTradePaymentOrder.getPayTypeCode())) {
+            // 支付宝
+            // 条码支付实时返回支付结果,不需要商户通知
+            // （修改后，条码支付结果通过订单轮询去确认订单状态，成功后通知商户）
             String notifyUrl = getMerchantNotifyUrl(rpTradePaymentRecord, rpTradePaymentOrder, rpTradePaymentRecord.getNotifyUrl(), TradeStatusEnum.SUCCESS);
             rpNotifyService.notifySend(notifyUrl, rpTradePaymentRecord.getMerchantOrderNo(), rpTradePaymentRecord.getMerchantNo());
             //return;
@@ -389,7 +391,6 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
     }
 
     private String getMerchantNotifyUrl(RpTradePaymentRecord rpTradePaymentRecord, RpTradePaymentOrder rpTradePaymentOrder, String sourceUrl, TradeStatusEnum tradeStatusEnum) {
-
         RpUserPayConfig rpUserPayConfig = rpUserPayConfigService.getByUserNo(rpTradePaymentRecord.getMerchantNo());
         if (rpUserPayConfig == null) {
             throw new UserBizException(UserBizException.USER_PAY_CONFIG_ERRPR, "用户支付配置有误");
@@ -458,7 +459,8 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
 
     /**
      * 初始化非直连扫码支付数据,非直连扫码支付初始化方法规则 1:根据(商户编号 + 商户订单号)确定订单是否存在
-     * 1.1:如果订单存在且为未支付,抛异常提示订单已存在 1.2:如果订单不存在,创建支付订单 2:获取商户支付配置,跳转到支付网关,选择支付方式
+     * 1.1:如果订单存在且为未支付,抛异常提示订单已存在
+     * 1.2:如果订单不存在,创建支付订单 2:获取商户支付配置,跳转到支付网关,选择支付方式
      *
      * @param payKey      商户支付KEY
      * @param productName 产品名称
@@ -497,6 +499,7 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
             throw new UserBizException(UserBizException.USER_PAY_CONFIG_ERRPR, "支付产品配置有误");
         }
 
+        //创建订单
         RpTradePaymentOrder rpTradePaymentOrder = rpTradePaymentOrderDao.selectByMerchantNoAndMerchantOrderNo(merchantNo, orderNo);
         if (rpTradePaymentOrder == null) {
             rpTradePaymentOrder = sealRpTradePaymentOrder(merchantNo, rpUserInfo.getUserName(), productName, orderNo, orderDate, orderTime, orderPrice, null, null, null, rpUserPayConfig.getFundIntoType(), orderIp, orderPeriod, returnUrl, notifyUrl, remark, field1, field2, field3, field4, field5);
@@ -533,7 +536,6 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
 
     /**
      * 非直连扫码支付,选择支付方式后,去支付
-     *
      * @param payKey
      * @param orderNo
      * @param payWayCode
@@ -581,13 +583,11 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
 
     /**
      * 通过支付订单及商户费率生成支付记录
-     *
      * @param rpTradePaymentOrder 支付订单
-     * @param payWay              商户支付配置
+     * @param payWay  商户支付配置
      * @return
      */
     private ScanPayResultVo getScanPayResultVo(RpTradePaymentOrder rpTradePaymentOrder, RpPayWay payWay) {
-
         ScanPayResultVo scanPayResultVo = new ScanPayResultVo();
         String payWayCode = payWay.getPayWayCode();// 支付方式
 
@@ -607,7 +607,8 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
         RpTradePaymentRecord rpTradePaymentRecord = sealRpTradePaymentRecord(rpTradePaymentOrder.getMerchantNo(), rpTradePaymentOrder.getMerchantName(), rpTradePaymentOrder.getProductName(), rpTradePaymentOrder.getMerchantOrderNo(), rpTradePaymentOrder.getOrderAmount(), payWay.getPayWayCode(), payWay.getPayWayName(), payType, rpTradePaymentOrder.getFundIntoType(), BigDecimal.valueOf(payWay.getPayRate()), rpTradePaymentOrder.getOrderIp(), rpTradePaymentOrder.getReturnUrl(), rpTradePaymentOrder.getNotifyUrl(), rpTradePaymentOrder.getRemark(), rpTradePaymentOrder.getField1(), rpTradePaymentOrder.getField2(), rpTradePaymentOrder.getField3(), rpTradePaymentOrder.getField4(), rpTradePaymentOrder.getField5());
         rpTradePaymentRecordDao.insert(rpTradePaymentRecord);
 
-        if (PayWayEnum.WEIXIN.name().equals(payWayCode)) {// 微信支付
+        if (PayWayEnum.WEIXIN.name().equals(payWayCode)) {
+            // 微信支付
             String appid = "";
             String mch_id = "";
             String partnerKey = "";
@@ -646,7 +647,8 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
             } else {
                 throw new TradeBizException(TradeBizException.TRADE_WEIXIN_ERROR, "请求微信异常");
             }
-        } else if (PayWayEnum.ALIPAY.name().equals(payWayCode)) {// 支付宝支付
+        } else if (PayWayEnum.ALIPAY.name().equals(payWayCode)) {
+            // 支付宝支付
 
             // 把请求参数打包成数组
             Map<String, String> sParaTemp = new HashMap<String, String>();
@@ -671,14 +673,18 @@ public class RpTradePaymentManagerServiceImpl implements RpTradePaymentManagerSe
 
             rpTradePaymentRecord.setBankReturnMsg(sHtmlText);
             rpTradePaymentRecordDao.update(rpTradePaymentRecord);
+
+            LOG.info("sHtmlText:"+sHtmlText);
+
             scanPayResultVo.setCodeUrl(sHtmlText);// 设置支付宝跳转地址
             scanPayResultVo.setPayWayCode(PayWayEnum.ALIPAY.name());
+
             scanPayResultVo.setProductName(rpTradePaymentOrder.getProductName());
             scanPayResultVo.setOrderAmount(rpTradePaymentOrder.getOrderAmount());
-
         } else {
             throw new TradeBizException(TradeBizException.TRADE_PAY_WAY_ERROR, "错误的支付方式");
         }
+        //发送消息方式
         rpNotifyService.orderSend(rpTradePaymentRecord.getBankOrderNo());
         return scanPayResultVo;
     }

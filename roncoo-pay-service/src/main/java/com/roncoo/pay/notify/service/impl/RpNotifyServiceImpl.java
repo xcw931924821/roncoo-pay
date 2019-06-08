@@ -79,19 +79,18 @@ public class RpNotifyServiceImpl implements RpNotifyService {
 
 	/**
 	 * 订单通知
-	 * 
-	 * @param merchantOrderNo
 	 */
 	@Override
 	public void orderSend(String bankOrderNo) {
 		final String orderNo = bankOrderNo;
-		
-		jmsTemplate.setDefaultDestinationName(MqConfig.ORDER_NOTIFY_QUEUE);
-		jmsTemplate.send(new MessageCreator() {
-			public Message createMessage(Session session) throws JMSException {
-				return session.createTextMessage(orderNo);
-			}
-		});
+		//todo 订单通知功能
+
+//		jmsTemplate.setDefaultDestinationName(MqConfig.ORDER_NOTIFY_QUEUE);
+//		jmsTemplate.send(new MessageCreator() {
+//			public Message createMessage(Session session) throws JMSException {
+//				return session.createTextMessage(orderNo);
+//			}
+//		});
 	}
 
 	/**

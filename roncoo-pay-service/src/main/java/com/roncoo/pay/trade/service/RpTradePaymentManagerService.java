@@ -23,9 +23,6 @@ import java.util.Map;
 
 /**
  * <b>功能说明:交易模块管理接口</b>
- *
- * @author Peter
- * <a href="http://www.roncoo.com">龙果学院(www.roncoo.com)</a>
  */
 public interface RpTradePaymentManagerService {
 
@@ -83,7 +80,6 @@ public interface RpTradePaymentManagerService {
 
     /**
      * 完成扫码支付(支付宝即时到账支付)
-     *
      * @param payWayCode
      * @param notifyMap
      * @return
@@ -126,7 +122,6 @@ public interface RpTradePaymentManagerService {
 
     /**
      * 非直连扫码支付,选择支付方式后,去支付
-     *
      * @param payKey
      * @param orderNo
      * @param payWayCode
@@ -145,6 +140,7 @@ public interface RpTradePaymentManagerService {
     public boolean processingTradeRecord(String bankOrderNo);
 
     /**
+     * 小程序支付
      * @param payKey      商户支付KEY
      * @param openId      用户标识
      * @param productName 产品名称

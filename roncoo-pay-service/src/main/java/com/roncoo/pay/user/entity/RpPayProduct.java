@@ -27,10 +27,18 @@ import java.io.Serializable;
  */
 public class RpPayProduct extends BaseEntity implements Serializable {
 
+    /**
+     * 支付产品的code
+     */
     private String productCode;
-
+    /**
+     * 支付产品的名称
+     */
     private String productName;
-    
+
+    /**
+     * 支付产品的审核状态 （YES）
+     */
     private String auditStatus;
 
     private static final long serialVersionUID = 1L;

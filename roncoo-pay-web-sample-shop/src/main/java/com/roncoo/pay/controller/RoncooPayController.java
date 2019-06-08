@@ -17,6 +17,7 @@ package com.roncoo.pay.controller;
 
 import com.roncoo.pay.utils.MerchantApiUtil;
 import com.roncoo.pay.utils.PayConfigUtil;
+import com.sun.prism.shader.Solid_TextureYV12_AlphaTest_Loader;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -35,9 +36,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * <b>功能说明:龙果支付控制类
+ * <b>功能说明:龙果支付商店页面
  * </b>
- *
  * @author Peter
  * <a href="http://www.roncoo.com">龙果学院(www.roncoo.com)</a>
  */
@@ -101,6 +101,7 @@ public class RoncooPayController extends BaseController {
 
         model.addAttribute("payMessage", buildRequest);
 
+        //默认到一个页面提交表单，自动
         return "toPay";
     }
 
@@ -111,7 +112,6 @@ public class RoncooPayController extends BaseController {
 
     /**
      * 模拟商户F2F条码支付
-     *
      * @param httpServletRequest
      * @param httpServletResponse
      * @param model
@@ -175,7 +175,6 @@ public class RoncooPayController extends BaseController {
 
     /**
      * 模拟小程序支付
-     *
      * @param httpServletRequest
      * @param httpServletResponse
      * @param model
@@ -249,7 +248,6 @@ public class RoncooPayController extends BaseController {
 
     public static void main(String[] args) {
         Map<String, Object> paramMap = new HashMap<String, Object>();
-
         paramMap.put("orderPrice", "0.11");
         paramMap.put("payWayCode", "WEIXIN");// 支付方式编码 支付宝: ALIPAY  微信:WEIXIN
         String orderNo = String.valueOf(System.currentTimeMillis());    // 订单编号
@@ -294,7 +292,9 @@ public class RoncooPayController extends BaseController {
 
         //String buildRequest = MerchantApiUtil.buildRequest(paramMap, "get", "确定", PayConfigUtil.readConfig("programpayUrl"));
         HttpClient httpClient = HttpClients.createDefault();
-        HttpPost post = new HttpPost(PayConfigUtil.readConfig("programpayUrl"));
+        String url = PayConfigUtil.readConfig("programpayUrl");
+        System.out.println("url:"+url);
+        HttpPost post = new HttpPost(url);
         try {
             List<NameValuePair> list = new ArrayList<>();
             for (Map.Entry<String, Object> entry : paramMap.entrySet()) {
@@ -303,7 +303,7 @@ public class RoncooPayController extends BaseController {
             post.setEntity(new UrlEncodedFormEntity(list,"UTF-8"));
             HttpResponse httpResponse = httpClient.execute(post);
             String result = EntityUtils.toString(httpResponse.getEntity());
-            System.out.println(result);
+            System.out.println("result:"+result);
         } catch (Exception e) {
             e.printStackTrace();
         }

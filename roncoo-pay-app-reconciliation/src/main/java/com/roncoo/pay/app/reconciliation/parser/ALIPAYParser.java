@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 package com.roncoo.pay.app.reconciliation.parser;
-
 import com.roncoo.pay.app.reconciliation.vo.AlipayAccountLogVO;
 import com.roncoo.pay.common.core.enums.PayWayEnum;
 import com.roncoo.pay.reconciliation.entity.RpAccountCheckBatch;
@@ -40,9 +39,6 @@ import java.util.List;
 
 /**
  * 支付宝对账单解析器 .
- *
- * 龙果学院：www.roncoo.com
- * 
  * @author：shenjialong
  */
 @Component("ALIPAYParser")
@@ -54,13 +50,9 @@ public class ALIPAYParser implements ParserInterface {
 
 	/**
 	 * 解析器的入口方法，每个解析器都必须有这个方法
-	 * 
-	 * @param file
-	 *            需要解析的文件
-	 * @param billDate
-	 *            账单日
-	 * @param batch
-	 *            对账批次记录
+	 * @param file 需要解析的文件
+	 * @param billDate 账单日
+	 * @param batch 对账批次记录
 	 * @return
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })

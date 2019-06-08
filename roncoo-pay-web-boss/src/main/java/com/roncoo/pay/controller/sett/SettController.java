@@ -88,7 +88,6 @@ public class SettController {
 	
 	/**
 	 * 函数功能说明 ： 发起结算
-	 * 
 	 * @参数： @return
 	 * @return String
 	 * @throws
@@ -190,8 +189,8 @@ public class SettController {
 	}
 	
 	/**
+	 * 获取可以结算余额
 	 * 函数功能说明 ：根据支付产品获取支付方式
-	 * 
 	 * @参数： @return
 	 * @return String
 	 * @throws
